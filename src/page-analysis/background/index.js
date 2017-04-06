@@ -16,6 +16,7 @@ async function performPageAnalysis({pageId, tabId}) {
     // Run these functions in the content script in the tab.
     const extractPageText = remoteFunction('extractPageText', {tabId})
     const extractPageMetadata = remoteFunction('extractPageMetadata', {tabId})
+    const freezeDry = remoteFunction('freezeDry', {tabId})
 
     // A shorthand for updating a single field in a doc.
     const setDocField = (db, docId, key) =>
@@ -41,12 +42,18 @@ async function performPageAnalysis({pageId, tabId}) {
         setDocField(db, pageId, 'extractedText')
     )
 
+    // Freeze-dry and store the whole page
+    const storePageFreezeDried = freezeDry().then(
+        setDocField(db, pageId, 'html')
+    )
+
     // When every task has either completed or failed, update the search index.
     await whenAllSettled([
         storePageMetadata,
         storePageText,
         storeFavIcon,
         storeScreenshot,
+        storePageFreezeDried,
     ])
     await updatePageSearchIndex()
 }
